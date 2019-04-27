@@ -1,8 +1,12 @@
 import numpy as np
 import random
+import math
+
+# Depth of the minimax tree - how many turns the CPU should look ahead before making their move
+depth = 2
 
 # The grid in which the game is played
-board = [["*" for col in range(0, 7)] for row in range(0, 6)]
+board = np.array([["*" for col in range(0, 7)] for row in range(0, 6)])
 # Receive/validate player input
 def playerTurn():
     global board
@@ -75,15 +79,74 @@ def checkWin(row, col):
             return True
     return False
 
+# Heuristic function representing a player's advantage
+# Calculated by summing the squares of the lengths of each continguous chain of pieces owned by the player
+def score(board, player):
+    score = 0
+    # Check rows
+    for row in board:
+        score += square_sum_chains(row, player)
+    # print(score)
+
+    # Check columns
+    for col in range(0, 7):
+        score += square_sum_chains(board[:, col], player)
+    # print(score)
+
+    # Check negative slope diagonals
+    # Diagonals constrained by column
+    for col in range(1, 7):
+        # print([board[i - col, i] for i in range(col, 7)])
+        score += square_sum_chains([board[i - col, i] for i in range(col, 7)], player)
+    # Diagonals constrained by row
+    for row in range(0, 6):
+        # print([board[i, i - row] for i in range(row, 6)])
+        score += square_sum_chains([board[i, i - row] for i in range(row, 6)], player)
+    # print(score)
+
+    # Check positive slope diagonals
+    for col in range(0, 6):
+        # print([board[col - i, i] for i in range(col, -1, -1)])
+        score += square_sum_chains([board[col - i, i] for i in range(col, -1, -1)], player)
+    for row in range(0, 6):
+        # print([board[i, 6 - i + row] for i in range(row, 6)])
+        score += square_sum_chains([board[i, 6 - i + row] for i in range(row, 6)], player)
+    # print(score)
+    return score
+
 # Display the board with pretty formatting
 def printBoard():
-    print ("1 2 3 4 5 6 7")
-    for row in board:
-        print(" ".join(row))
+    print ("  1 2 3 4 5 6 7")
+    for index, row in enumerate(board):
+        print(str(index+1) + " " + " ".join(row))
+    print("o" + str(score(board, "O")))
+    print("x" + str(score(board, "X")))
 
-# Utility bounds-checking
+# Utility bounds-checking function
 def inBounds(row, col):
     return row >= 0 and col >= 0 and row < 6 and col < 7
+
+# Utility squared sum function
+def square_sum_chains(row, player):
+    score = 0
+    # The index at which the current chain begins
+    start_index = 0
+    for index, value in enumerate(row):
+        if value == player:
+            # Detect beginning of chain
+            if index == 0 or row[index-1] != player:
+                start_index = index
+            # Detect end of row
+            if index == len(row) - 1:
+                length = index - start_index + 1
+                score += length ** 2
+        if value != player:
+            # Detect end of chain
+            if index > 0 and row[index-1] == player:
+                length = index - start_index
+                score += length ** 2
+
+    return score
 
 while True:
     col = playerTurn()
