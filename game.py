@@ -6,6 +6,12 @@ MAX_DEPTH = 2
 
 # The grid in which the game is played
 board = np.array([["*" for col in range(0, 7)] for row in range(0, 6)])
+# board = np.array([["*", "*", "*", "*", "*", "*", "*"],
+#                 ["*", "*", "*", "*", "*", "*", "*"],
+#                 ["O", "X", "O", "X", "*", "*", "*"],
+#                 ["X", "X", "O", "O", "*", "*", "*"],
+#                 ["X", "O", "X", "O", "*", "*", "*"],
+#                 ["X", "X", "O", "O", "*", "*", "*"]])
 # Receive/validate player input
 def playerTurn():
 
@@ -32,6 +38,8 @@ def cpuTurn():
 # Where the magic happens
 def minimaxSearch(board, depth):
     if depth == MAX_DEPTH:
+        # print("Depth: 2")
+        # print("Score: " + str(heuristic(board)))
         return (-1, heuristic(board))
     # Loop over each possible move
     best_score = -100000000 # The best hypothetical outcome that any move could produce
@@ -39,10 +47,15 @@ def minimaxSearch(board, depth):
     for col in range(0, 7):
         if not isColumnFilled(board, col):
             new_board = np.array(board)
-            placePiece(new_board, col, "X")
+            piece = "X" if depth % 2 == 0 else "O"
+            placePiece(new_board, col, piece)
             # Odd depths represent the player's turn; they want the heuristic to be as low as possible,
             # so we invert it
             new_score = (-1 ** depth) * minimaxSearch(new_board, depth + 1)[1]
+            # print("Depth: " + str(depth))
+            # print("Col: " + str(col))
+            # printBoard(new_board)
+            # print("Score: " + str(new_score))
             if (new_score > best_score):
                 best_score = new_score
                 best_move = col
@@ -143,8 +156,8 @@ def printBoard(board):
     print ("  1 2 3 4 5 6 7")
     for index, row in enumerate(board):
         print(str(index+1) + " " + " ".join(row))
-    print("o" + str(score(board, "O")))
-    print("x" + str(score(board, "X")))
+    # print("o" + str(score(board, "O")))
+    # print("x" + str(score(board, "X")))
 
 def isColumnFilled(board, col):
     return board[0][col] != "*"
