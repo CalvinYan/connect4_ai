@@ -2,16 +2,16 @@ import numpy as np
 import random
 
 # Depth of the minimax tree - how many turns the CPU should look ahead before making their move
-MAX_DEPTH = 2
+MAX_DEPTH = 4
 
 # The grid in which the game is played
 board = np.array([["*" for col in range(0, 7)] for row in range(0, 6)])
-# board = np.array([["*", "*", "*", "*", "*", "*", "*"],
-#                 ["*", "*", "*", "*", "*", "*", "*"],
-#                 ["O", "X", "O", "X", "*", "*", "*"],
-#                 ["X", "X", "O", "O", "*", "*", "*"],
-#                 ["X", "O", "X", "O", "*", "*", "*"],
-#                 ["X", "X", "O", "O", "*", "*", "*"]])
+# board = np.array([["X", "*", "*", "*", "*", "*", "*"],
+#                 ["X", "O", "*", "*", "*", "*", "*"],
+#                 ["O", "X", "*", "*", "*", "*", "*"],
+#                 ["X", "O", "*", "*", "*", "*", "*"],
+#                 ["X", "O", "*", "*", "*", "*", "*"],
+#                 ["X", "O", "*", "O", "*", "*", "*"]])
 # Receive/validate player input
 def playerTurn():
 
@@ -40,6 +40,9 @@ def minimaxSearch(board, depth):
     if depth == MAX_DEPTH:
         # print("Depth: 2")
         # print("Score: " + str(heuristic(board)))
+        return (-1, heuristic(board))
+    # Terminate upon win
+    if score(board, "O") >= 10000 or score(board, "X") >= 10000:
         return (-1, heuristic(board))
     # Loop over each possible move
     best_score = -100000000 # The best hypothetical outcome that any move could produce
@@ -191,6 +194,7 @@ def square_sum_chains(row, player):
     return score
 
 while True:
+    printBoard(board)
     col = playerTurn()
     row, col = placePiece(board, col, "O")
     
@@ -203,8 +207,8 @@ while True:
     # col = random.randint(0, 6)
     # while isColumnFilled(board, col): col = random.randint(0, 6)
     row, col = placePiece(board, col, "X")
-    printBoard(board)
     if checkWin(board, row, col):
+        printBoard(board)
         print("X wins!")
         quit()
 
