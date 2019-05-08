@@ -6,12 +6,12 @@ MAX_DEPTH = 4
 
 # The grid in which the game is played
 board = np.array([["*" for col in range(0, 7)] for row in range(0, 6)])
-# board = np.array([["X", "*", "*", "*", "*", "*", "*"],
-#                 ["X", "O", "*", "*", "*", "*", "*"],
-#                 ["O", "X", "*", "*", "*", "*", "*"],
-#                 ["X", "O", "*", "*", "*", "*", "*"],
-#                 ["X", "O", "*", "*", "*", "*", "*"],
-#                 ["X", "O", "*", "O", "*", "*", "*"]])
+board = np.array([["*", "*", "*", "*", "*", "*", "*"],
+                ["*", "*", "*", "*", "*", "*", "*"],
+                ["*", "*", "*", "*", "*", "*", "*"],
+                ["*", "*", "*", "*", "*", "*", "*"],
+                ["*", "*", "*", "*", "*", "*", "*"],
+                ["*", "*", "*", "X", "*", "*", "*"]])
 # Receive/validate player input
 def playerTurn():
 
@@ -43,7 +43,18 @@ def minimaxSearch(board, depth):
         return (-1, heuristic(board))
     # Terminate upon win
     if score(board, "O") >= 10000 or score(board, "X") >= 10000:
-        return (-1, heuristic(board))
+        # printBoard(board)
+        # print("Depth: " + str(depth))
+        
+        # # print("Score (X): " + str(score(board, "X")))
+        # print("Heuristic: " + str(heuristic(board)))
+        # if depth == 1:
+        #     print("Score (O): " + str(score(board, "O")))
+        #     print("Heuristic: " + str(heuristic(board)))
+
+        # Deducting points for each move rewards wins that occur earlier,
+        # even if their heuristic isn't the highest
+        return (-1, heuristic(board) - depth * 1000)
     # Loop over each possible move
     best_score = -100000000 # The best hypothetical outcome that any move could produce
     best_move = 0 # The move that produces this best outcome
@@ -54,15 +65,25 @@ def minimaxSearch(board, depth):
             placePiece(new_board, col, piece)
             # Odd depths represent the player's turn; they want the heuristic to be as low as possible,
             # so we invert it
-            new_score = (-1 ** depth) * minimaxSearch(new_board, depth + 1)[1]
-            # print("Depth: " + str(depth))
-            # print("Col: " + str(col))
-            # printBoard(new_board)
-            # print("Score: " + str(new_score))
+            new_score = ((-1) ** depth) * minimaxSearch(new_board, depth + 1)[1]
+            # if new_score >= -1000 and depth == 0: 
+            #     print(new_score)
+            #     print(col)
+            # if depth == 0 and col == 0: 
+            #     print((-1) ** 1)
+            #     print(minimaxSearch(new_board, 1))
+            
+            # if (depth >= 1):
+            #     print("Depth: " + str(depth))
+            #     print("Col: " + str(col))
+            #     printBoard(new_board)
+            #     print("Score: " + str(score(new_board, "X")))
+            #     print("Heuristic: " + str(new_score))
             if (new_score > best_score):
                 best_score = new_score
                 best_move = col
-    return (best_move, best_score)
+    # Revert the score to its original value
+    return (best_move, ((-1) ** depth) * best_score)
     
 
     # Even depths represent the CPU's turn, so we want the move that leads to the highest heuristic
@@ -126,33 +147,62 @@ def checkWin(board, row, col):
 def heuristic(board):
     return score(board, "X") - score(board, "O")
 
-# The squared sum of the lengths of each continguous chain of pieces owned by a player, representing their
-# board presence
+# Represents a player's board presence. To calculate the score, we find pairs of pieces sharing a row,
+# column, or diagonal, with no opposing pieces in between, and add a subscore based on their distance
 def score(board, player):
     score = 0
     # Check rows
     for row in board:
-        score += square_sum_chains(row, player)
+        score += unblocked_pairs(row, player)
 
     # Check columns
     for col in range(0, 7):
-        score += square_sum_chains(board[:, col], player)
+        score += unblocked_pairs(board[:, col], player)
 
     # Check negative slope diagonals
+    # Note: we don't care about diagonals with len < 4!
     # Diagonals constrained by column
-    for col in range(1, 7):
-        score += square_sum_chains([board[i - col, i] for i in range(col, 7)], player)
+    for col in range(1, 4):
+        score += unblocked_pairs([board[i - col, i] for i in range(col, 7)], player)
     # Diagonals constrained by row
-    for row in range(0, 6):
-        score += square_sum_chains([board[i, i - row] for i in range(row, 6)], player)
+    for row in range(0, 3):
+        score += unblocked_pairs([board[i, i - row] for i in range(row, 6)], player)
 
     # Check positive slope diagonals
-    for col in range(0, 6):
-        score += square_sum_chains([board[col - i, i] for i in range(col, -1, -1)], player)
-    for row in range(0, 6):
-        score += square_sum_chains([board[i, 6 - i + row] for i in range(row, 6)], player)
+    for col in range(3, 6):
+        score += unblocked_pairs([board[col - i, i] for i in range(col, -1, -1)], player)
+    for row in range(0, 3):
+        score += unblocked_pairs([board[i, 6 - i + row] for i in range(row, 6)], player)
     
     return score
+
+# # The squared sum of the lengths of each continguous chain of pieces owned by a player, representing their
+# # board presence
+# def score(board, player):
+#     score = 0
+#     # Check rows
+#     for row in board:
+#         score += square_sum_chains(row, player)
+
+#     # Check columns
+#     for col in range(0, 7):
+#         score += square_sum_chains(board[:, col], player)
+
+#     # Check negative slope diagonals
+#     # Diagonals constrained by column
+#     for col in range(1, 7):
+#         score += square_sum_chains([board[i - col, i] for i in range(col, 7)], player)
+#     # Diagonals constrained by row
+#     for row in range(0, 6):
+#         score += square_sum_chains([board[i, i - row] for i in range(row, 6)], player)
+
+#     # Check positive slope diagonals
+#     for col in range(0, 6):
+#         score += square_sum_chains([board[col - i, i] for i in range(col, -1, -1)], player)
+#     for row in range(0, 6):
+#         score += square_sum_chains([board[i, 6 - i + row] for i in range(row, 6)], player)
+    
+#     return score
 
 # Display the board with pretty formatting
 def printBoard(board):
@@ -168,6 +218,28 @@ def isColumnFilled(board, col):
 # Utility bounds-checking function
 def inBounds(row, col):
     return row >= 0 and col >= 0 and row < 6 and col < 7
+
+# Utility scoring function for a single row/column/diagonal
+def unblocked_pairs(row, player):
+    score = 0
+    pieces = [] # Positions of pieces that can form an unblocked pair with the current index
+    for col, val in enumerate(row):
+        if val == player:
+            # Check win condition
+            if len(pieces) == 3 and col - pieces[0] == 3:
+                return 10000
+            for old_col in pieces:
+                dist = col - old_col
+                score += (7 - dist) ** 2
+            pieces.append(col)
+        elif val == "*":
+            pass
+        else:
+            # Hit a block
+            pieces.clear()
+    return score
+
+
 
 # Utility squared sum function
 def square_sum_chains(row, player):
@@ -195,6 +267,8 @@ def square_sum_chains(row, player):
 
 while True:
     printBoard(board)
+    print("Score (O): " + str(score(board, "O")))
+    print("Score (X): " + str(score(board, "X")))
     col = playerTurn()
     row, col = placePiece(board, col, "O")
     
@@ -211,5 +285,3 @@ while True:
         printBoard(board)
         print("X wins!")
         quit()
-
-
