@@ -147,62 +147,34 @@ def checkWin(board, row, col):
 def heuristic(board):
     return score(board, "X") - score(board, "O")
 
-# Represents a player's board presence. To calculate the score, we find pairs of pieces sharing a row,
-# column, or diagonal, with no opposing pieces in between, and add a subscore based on their distance
+# Represents a player's board presence. To calculate the score, we search for chains of 4 cells along
+# every row, column, or diagonal with no opposing pieces in them, and add the square of the number of
+# player pieces in that chain to the score
 def score(board, player):
     score = 0
     # Check rows
     for row in board:
-        score += unblocked_pairs(row, player)
+        score += subscore(row, player)
 
     # Check columns
     for col in range(0, 7):
-        score += unblocked_pairs(board[:, col], player)
+        score += subscore(board[:, col], player)
 
     # Check negative slope diagonals
     # Note: we don't care about diagonals with len < 4!
     # Diagonals constrained by column
     for col in range(1, 4):
-        score += unblocked_pairs([board[i - col, i] for i in range(col, 7)], player)
+        score += subscore([board[i - col, i] for i in range(col, 7)], player)
     # Diagonals constrained by row
     for row in range(0, 3):
-        score += unblocked_pairs([board[i, i - row] for i in range(row, 6)], player)
+        score += subscore([board[i, i - row] for i in range(row, 6)], player)
 
     # Check positive slope diagonals
     for col in range(3, 6):
-        score += unblocked_pairs([board[col - i, i] for i in range(col, -1, -1)], player)
+        score += subscore([board[col - i, i] for i in range(col, -1, -1)], player)
     for row in range(0, 3):
-        score += unblocked_pairs([board[i, 6 - i + row] for i in range(row, 6)], player)
-    
+        score += subscore([board[i, 6 - i + row] for i in range(row, 6)], player)
     return score
-
-# # The squared sum of the lengths of each continguous chain of pieces owned by a player, representing their
-# # board presence
-# def score(board, player):
-#     score = 0
-#     # Check rows
-#     for row in board:
-#         score += square_sum_chains(row, player)
-
-#     # Check columns
-#     for col in range(0, 7):
-#         score += square_sum_chains(board[:, col], player)
-
-#     # Check negative slope diagonals
-#     # Diagonals constrained by column
-#     for col in range(1, 7):
-#         score += square_sum_chains([board[i - col, i] for i in range(col, 7)], player)
-#     # Diagonals constrained by row
-#     for row in range(0, 6):
-#         score += square_sum_chains([board[i, i - row] for i in range(row, 6)], player)
-
-#     # Check positive slope diagonals
-#     for col in range(0, 6):
-#         score += square_sum_chains([board[col - i, i] for i in range(col, -1, -1)], player)
-#     for row in range(0, 6):
-#         score += square_sum_chains([board[i, 6 - i + row] for i in range(row, 6)], player)
-    
-#     return score
 
 # Display the board with pretty formatting
 def printBoard(board):
@@ -220,49 +192,26 @@ def inBounds(row, col):
     return row >= 0 and col >= 0 and row < 6 and col < 7
 
 # Utility scoring function for a single row/column/diagonal
-def unblocked_pairs(row, player):
+def subscore(row, player):
+    # print(row)
     score = 0
-    pieces = [] # Positions of pieces that can form an unblocked pair with the current index
-    for col, val in enumerate(row):
-        if val == player:
-            # Check win condition
-            if len(pieces) == 3 and col - pieces[0] == 3:
-                return 10000
-            for old_col in pieces:
-                dist = col - old_col
-                score += (7 - dist) ** 2
-            pieces.append(col)
-        elif val == "*":
-            pass
+
+    for start in range(0, len(row) - 3):
+        num_players = 0 # Reset so it doesn't count for points
+        for col in range(start, start + 4):
+            val = row[col]
+            if val == player:
+                num_players += 1
+            elif val != "*":
+                # If there are opponent pieces in this block, you can't produce a connect 4 with it
+                num_players = 0 # Reset so it doesn't count for points
+                break 
+        if num_players == 4: # Check win condition
+            return 10000
         else:
-            # Hit a block
-            pieces.clear()
-    return score
-
-
-
-# Utility squared sum function
-def square_sum_chains(row, player):
-    score = 0
-    # The index at which the current chain begins
-    start_index = 0
-    for index, value in enumerate(row):
-        if value == player:
-            # Detect beginning of chain
-            if index == 0 or row[index-1] != player:
-                start_index = index
-            # Detect end of row
-            if index == len(row) - 1:
-                length = index - start_index + 1
-                score += length ** 3
-                if (length >= 4): score += 10000 # Heuristic heavily favors wins
-        if value != player:
-            # Detect end of chain
-            if index > 0 and row[index-1] == player:
-                length = index - start_index
-                score += length ** 3
-                if (length >= 4): score += 10000
-
+            score += num_players ** 2
+        
+    # print(score)
     return score
 
 while True:
