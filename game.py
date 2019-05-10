@@ -2,16 +2,16 @@ import numpy as np
 import random
 
 # Depth of the minimax tree - how many turns the CPU should look ahead before making their move
-MAX_DEPTH = 4
+MAX_DEPTH = 6
 
 # The grid in which the game is played
 board = np.array([["*" for col in range(0, 7)] for row in range(0, 6)])
-# board = np.array([["*", "*", "*", "*", "*", "*", "*"],
-#                 ["*", "*", "*", "*", "*", "*", "*"],
-#                 ["*", "*", "*", "*", "*", "*", "*"],
-#                 ["*", "*", "*", "*", "*", "*", "*"],
-#                 ["*", "*", "*", "*", "*", "*", "*"],
-#                 ["*", "*", "*", "X", "*", "*", "*"]])
+board = np.array([["X", "*", "O", "X", "X", "*", "X"],
+                ["O", "*", "X", "O", "X", "*", "O"],
+                ["X", "*", "X", "X", "X", "*", "O"],
+                ["O", "*", "X", "O", "O", "*", "X"],
+                ["O", "O", "O", "X", "X", "O", "O"],
+                ["X", "O", "X", "O", "O", "X", "O"]])
 
 # Sequence of move for debugging purposes
 seq = []
@@ -41,10 +41,10 @@ def cpuTurn():
 # Where the magic happens
 def minimaxSearch(board, depth, alpha):
     if depth == MAX_DEPTH:
-        return (-1, heuristic(board))
+        return heuristic(board)
     # Terminate upon win
     if score(board, "O") >= 10000 or score(board, "X") >= 10000:
-        return (-1, heuristic(board) - depth * 1000)
+        return heuristic(board) - depth * 1000
     # Loop over each possible move
     best_score = None # The max or min heuristic that any move could produce
     best_move = 0 # The move that produces this best outcome
@@ -57,7 +57,9 @@ def minimaxSearch(board, depth, alpha):
             # so we invert it
             new_score = minimaxSearch(new_board, depth + 1, best_score)
             # Just assign the first value as the best, nothing to compare it to
-            if best_score is None: best_score = new_score
+            if best_score is None: 
+                best_score = new_score
+                best_move = col
             if depth % 2 == 0: # Maximizing player's turn (X)
                 if new_score > best_score:
                     best_score = new_score
