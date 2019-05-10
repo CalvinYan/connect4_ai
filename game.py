@@ -6,12 +6,12 @@ MAX_DEPTH = 4
 
 # The grid in which the game is played
 board = np.array([["*" for col in range(0, 7)] for row in range(0, 6)])
-board = np.array([["*", "*", "*", "*", "*", "*", "*"],
-                ["*", "*", "*", "*", "*", "*", "*"],
-                ["*", "*", "*", "*", "*", "*", "*"],
-                ["*", "*", "*", "*", "*", "*", "*"],
-                ["*", "*", "*", "*", "*", "*", "*"],
-                ["*", "*", "*", "X", "*", "*", "*"]])
+# board = np.array([["*", "*", "*", "*", "*", "*", "*"],
+#                 ["*", "*", "*", "*", "*", "*", "*"],
+#                 ["*", "*", "*", "*", "*", "*", "*"],
+#                 ["*", "*", "*", "*", "*", "*", "*"],
+#                 ["*", "*", "*", "*", "*", "*", "*"],
+#                 ["*", "*", "*", "X", "*", "*", "*"]])
 
 # Sequence of move for debugging purposes
 seq = []
@@ -36,17 +36,17 @@ def playerTurn():
 
 # Initiate the minimax algorithm and return its result
 def cpuTurn():
-    return minimaxSearch(board, 0)[0]
+    return minimaxSearch(board, 0, None)
 
 # Where the magic happens
-def minimaxSearch(board, depth):
+def minimaxSearch(board, depth, alpha):
     if depth == MAX_DEPTH:
         return (-1, heuristic(board))
     # Terminate upon win
     if score(board, "O") >= 10000 or score(board, "X") >= 10000:
         return (-1, heuristic(board) - depth * 1000)
     # Loop over each possible move
-    best_score = -100000000 # The best hypothetical outcome that any move could produce
+    best_score = None # The max or min heuristic that any move could produce
     best_move = 0 # The move that produces this best outcome
     for col in range(0, 7):
         if not isColumnFilled(board, col):
@@ -55,12 +55,27 @@ def minimaxSearch(board, depth):
             placePiece(new_board, col, piece)
             # Odd depths represent the player's turn; they want the heuristic to be as low as possible,
             # so we invert it
-            new_score = ((-1) ** depth) * minimaxSearch(new_board, depth + 1)[1]
-            if (new_score > best_score):
-                best_score = new_score
-                best_move = col
-    # Revert the score to its original value
-    return (best_move, ((-1) ** depth) * best_score)
+            new_score = minimaxSearch(new_board, depth + 1, best_score)
+            # Just assign the first value as the best, nothing to compare it to
+            if best_score is None: best_score = new_score
+            if depth % 2 == 0: # Maximizing player's turn (X)
+                if new_score > best_score:
+                    best_score = new_score
+                    best_move = col
+                    if alpha is not None and best_score > alpha:
+                        # Alpha-beta prune this branch
+                        return best_score
+            else:
+                if new_score < best_score:
+                    best_score = new_score
+                    best_move = col
+                    if alpha is not None and best_score < alpha:
+                        # Alpha-beta prune this branch
+                        return best_score
+                 # Minimizing player's turn (O)
+                
+    # Return the heuristic score if not the ground state, otherwise return the move the CPU will play
+    return best_score if depth > 0 else best_move
 
 # Update the board with the new piece's position and return this position
 # The value of team is 0 for player, 1 for CPU
