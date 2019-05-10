@@ -12,6 +12,9 @@ board = np.array([["*", "*", "*", "*", "*", "*", "*"],
                 ["*", "*", "*", "*", "*", "*", "*"],
                 ["*", "*", "*", "*", "*", "*", "*"],
                 ["*", "*", "*", "X", "*", "*", "*"]])
+
+# Sequence of move for debugging purposes
+seq = []
 # Receive/validate player input
 def playerTurn():
 
@@ -38,22 +41,9 @@ def cpuTurn():
 # Where the magic happens
 def minimaxSearch(board, depth):
     if depth == MAX_DEPTH:
-        # print("Depth: 2")
-        # print("Score: " + str(heuristic(board)))
         return (-1, heuristic(board))
     # Terminate upon win
     if score(board, "O") >= 10000 or score(board, "X") >= 10000:
-        # printBoard(board)
-        # print("Depth: " + str(depth))
-        
-        # # print("Score (X): " + str(score(board, "X")))
-        # print("Heuristic: " + str(heuristic(board)))
-        # if depth == 1:
-        #     print("Score (O): " + str(score(board, "O")))
-        #     print("Heuristic: " + str(heuristic(board)))
-
-        # Deducting points for each move rewards wins that occur earlier,
-        # even if their heuristic isn't the highest
         return (-1, heuristic(board) - depth * 1000)
     # Loop over each possible move
     best_score = -100000000 # The best hypothetical outcome that any move could produce
@@ -66,31 +56,11 @@ def minimaxSearch(board, depth):
             # Odd depths represent the player's turn; they want the heuristic to be as low as possible,
             # so we invert it
             new_score = ((-1) ** depth) * minimaxSearch(new_board, depth + 1)[1]
-            # if new_score >= -1000 and depth == 0: 
-            #     print(new_score)
-            #     print(col)
-            # if depth == 0 and col == 0: 
-            #     print((-1) ** 1)
-            #     print(minimaxSearch(new_board, 1))
-            
-            # if (depth >= 1):
-            #     print("Depth: " + str(depth))
-            #     print("Col: " + str(col))
-            #     printBoard(new_board)
-            #     print("Score: " + str(score(new_board, "X")))
-            #     print("Heuristic: " + str(new_score))
             if (new_score > best_score):
                 best_score = new_score
                 best_move = col
     # Revert the score to its original value
     return (best_move, ((-1) ** depth) * best_score)
-    
-
-    # Even depths represent the CPU's turn, so we want the move that leads to the highest heuristic
-
-    # Odd depths represent the player's turn, so we want the move that leads to the lowest heuristic
-         
-
 
 # Update the board with the new piece's position and return this position
 # The value of team is 0 for player, 1 for CPU
@@ -112,7 +82,7 @@ def placePiece(board, col, piece):
 # The capital X's horizontal chain is length 2; its vertical chain is length 1; its positive chain is
 # length 4; and its negative chain is length 3. We know that if victory is achieved, it must have
 # been achieved using the most recent piece. Thus we search for a chain from this piece at least 4 long.
-def checkWin(board, row, col):
+def checkWin(board, row, col, player):
     piece = board[row][col]
     if piece == "*": return False # Shouldn't happen but just as a precaution
 
@@ -140,8 +110,12 @@ def checkWin(board, row, col):
 
     for length in lengths:
         if length >= 4: 
-            return True
-    return False
+            printBoard(board)
+            print(player + " wins!")
+            save_moves = input("Would you like to save the sequence of moves? (Y/N) ")
+            if save_moves == "Y":
+                [print(col+1) for col in seq]
+            quit()
 
 # Heuristic function representing the CPU's score advantage over the player
 def heuristic(board):
@@ -220,17 +194,13 @@ while True:
     print("Score (X): " + str(score(board, "X")))
     col = playerTurn()
     row, col = placePiece(board, col, "O")
+    seq.append(col)
     
-    if checkWin(board, row, col):
-        printBoard(board)
-        print("O wins!")
-        quit()
-    
+    checkWin(board, row, col, "O")
+
     col = cpuTurn()
     # col = random.randint(0, 6)
     # while isColumnFilled(board, col): col = random.randint(0, 6)
     row, col = placePiece(board, col, "X")
-    if checkWin(board, row, col):
-        printBoard(board)
-        print("X wins!")
-        quit()
+    seq.append(col)
+    checkWin(board, row, col, "X")
